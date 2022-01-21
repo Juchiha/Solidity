@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "./contractos/ERC165.sol";
+import "./contratos/ERC165.sol";
 import "./interfaces/IERC721.sol";
 import "./interfaces/IERC721Receiver.sol";
 
@@ -22,7 +22,7 @@ contract Token721 is ERC165, IERC721{
     /*Funcion para soportar Interfaces, verificamos que las soporta*/
     /*Override => SobreEscribir*/
     /*Con super se llama la funcion de la interfas de IERC165 en contracts*/
-    function supportsInterface(bytes interfaceId) public view virtual override(ERC165, IERC165) returns(bool){
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns(bool){
         return interfaceId == type(IERC721).interfaceId || super.supportsInterface(interfaceId);
     }
     /*Accede al mappin de _balance y retirna cuantos tokens tiene una address que se le pasa como parametro*/
@@ -70,7 +70,7 @@ contract Token721 is ERC165, IERC721{
 
     /*validamos los permisos, poregunta si el oprator puede mover los tokens de esa billetera*/
     function isApprovedForAll(address owner, address operator) public view virtual override returns(bool){
-        return _operatorApprovals[ownerOf][operator];
+        return _operatorApprovals[owner][operator];
     }
     /**HASTA AQUI */
     
@@ -103,12 +103,12 @@ contract Token721 is ERC165, IERC721{
     }
 
     /*Validaciones*/
-    function _checkOnERC721Received (address from, adreess to, uint256 tokenId, bytes memory data) private returns (bool){
+    function _checkOnERC721Received (address from, address to, uint256 tokenId, bytes memory data) private returns (bool){
         if(_isContract(to)){
             try IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, data) returns (bytes4 retval){
                 return retval == IERC721Receiver(to).onERC721Received.selector;
             }catch (bytes memory reasson){
-                if(retval.length == 0){
+                if(reasson.length == 0){
                     revert("ERC721 Error, transfer 721Received implemented");
                 }else{
                     assembly{
@@ -133,7 +133,7 @@ contract Token721 is ERC165, IERC721{
         return _owners[tokenId] !=  address(0);
     }
 
-    function _beforeTokenTransfer(address from, adreess to, uint256 tokenId) internal virtual{
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual{
         /*POr defecto la dejamos vacia*/
     }
 
@@ -170,5 +170,10 @@ contract Token721 is ERC165, IERC721{
         emit Transfer(address(0), to, tokenId); //Se transfiere el token
     }
 
+    function _isApprovedOrOwner(address sender, uint256 tokenId)internal view virtual returns(bool){
+        require(_exist(tokenId), "ERC721 Error,Token no existe"); 
+        address owner = ownerOf(tokenId);
+        return (owner == sender || getApproved(tokenId) == sender || isApprovedForAll(owner, sender));
+    }   
     /*Hasta aqui*/
 }
