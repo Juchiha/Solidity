@@ -54,6 +54,23 @@ contract Token721 is ERC165, IERC721{
         return owner;
     }
 
+    function getApproved(uint256 tokenId) public view virtual override returns(address){
+        require(_exist(tokenId), "ERC721 ERROR, TOKEN ID DOES NOT EXIST");
+        return _tokenApprovals[tokenId];
+    }
+    /*Damos permiso a una address de ser dueño de todos nuestros tokens*/
+    function setApprovalForAll(address operator, bool approved) public virtual override {
+        require(operator != msg.sender , "ERC721 ERROR, Operador Address must be different");//la address a la que quermos dar permisos de manejar nuestros tokens
+        // debe ser difernete a la que esta haciendo la transaccion
+        _operatorApprovals[msg.sender][operator] = approved; //Aprovamos
+        emit ApprovalForAll(msg.sender, operator, approved);//emitimos el evento
+    }
+
+    /*validamos los permisos, poregunta si el oprator puede mover los tokens de esa billetera*/
+    function isApprovedForAll(address owner, address operator) public view virtual override returns(bool){
+        return _operatorApprovals[ownerOf][operator];
+    }
+
     /*Bloque de codigo Funciones del 721*/
     /*si tienen _ es funcion interna que sera llamada dentro del mismo contrato*/
     function _safeMint(address to, uint256 tokenId) public{
