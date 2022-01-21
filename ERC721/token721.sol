@@ -16,6 +16,44 @@ contract Token721 is ERC165, IERC721{
     //Relacion de las adrres que pueden gestionar todos los tokens de las otras adreess
     mapping (address => mapping (address => bool)) private _operatorApprovals;
 
+    /*Funcion para que solo una persona púeda crear tokens*/
+
+    /******/
+    /*Funcion para soportar Interfaces, verificamos que las soporta*/
+    /*Override => SobreEscribir*/
+    /*Con super se llama la funcion de la interfas de IERC165 en contracts*/
+    function supportsInterface(bytes interfaceId) public view virtual override(ERC165, IERC165) returns(bool){
+        return interfaceId == type(IERC721).interfaceId || super.supportsInterface(interfaceId);
+    }
+    /*Accede al mappin de _balance y retirna cuantos tokens tiene una address que se le pasa como parametro*/
+    function balanceOf(address owner) public view virtual override returns(uint256){
+        require(owner != address(0), "ERC721 ERROR, ZERO ADDRESS"); //No se le puede pasar una addres vacia o incexistente!
+        return _balances[owner];
+    }
+
+    /*Recibe una addres a la que se quiere permiso yt  una identificador de token que es quie se le quiere dar
+    permiso para que se le pueda transferir*/
+    function approve(address to, uint tokenId)public virtual override{
+        address owner = ownerOf(tokenId);//obtenermos el dueño de ese token
+        require(to != owner, "ERROR ERC721, DESTINATION ADDRESS MUST BE DIFFERENT");///Si la direecion que se quiere dar permiso no puede ser la misma del dueño
+        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), // que el dueño del token sea quien este dando permiso o que tu tengas permiso de gestio de este
+            "ERROR ERC721, YOU ARE NOT THE OWNER OR YOU DON'T HAVE PERMISSIONS"
+        );
+        _approved(to, tokenId); //se aprueba la transferencia y se adjudican los permisos
+    }
+    /*asignamos la adrres a la que quermos darle permiso y se hace un event approval*/
+    function _approved(address to, uint256 tokenId)internal virtual{
+       _tokenApprovals[tokenId] = to;
+       emit Approval(ownerOf(tokenId), to, tokenId); //dueño, direccion a la que le damos permisos, y el token
+    }
+
+    /*Retorna el address dueño de ese token*/
+    function ownerOf(uint256 tokenId)  public view virtual override returns(address){
+        address owner = _owners[tokenId];
+        require(owner != address(0), "ERC721 ERROR, TokenID no exist"); //No existe ese token que se la paso
+        return owner;
+    }
+
     /*Bloque de codigo Funciones del 721*/
     /*si tienen _ es funcion interna que sera llamada dentro del mismo contrato*/
     function _safeMint(address to, uint256 tokenId) public{
@@ -76,6 +114,6 @@ contract Token721 is ERC165, IERC721{
     }
 
     function _beforeTokenTransfer(address from, adreess to, uint256 tokenId) internal virtual{
-
+        /*POr defecto la dejamos vacia*/
     }
 }
