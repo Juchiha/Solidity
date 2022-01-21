@@ -31,6 +31,8 @@ contract Token721 is ERC165, IERC721{
         return _balances[owner];
     }
 
+    /*Aprobar tokens y direcciones*/
+
     /*Recibe una addres a la que se quiere permiso yt  una identificador de token que es quie se le quiere dar
     permiso para que se le pueda transferir*/
     function approve(address to, uint tokenId)public virtual override{
@@ -70,7 +72,8 @@ contract Token721 is ERC165, IERC721{
     function isApprovedForAll(address owner, address operator) public view virtual override returns(bool){
         return _operatorApprovals[ownerOf][operator];
     }
-
+    /**HASTA AQUI */
+    
     /*Bloque de codigo Funciones del 721*/
     /*si tienen _ es funcion interna que sera llamada dentro del mismo contrato*/
     function _safeMint(address to, uint256 tokenId) public{
@@ -133,4 +136,39 @@ contract Token721 is ERC165, IERC721{
     function _beforeTokenTransfer(address from, adreess to, uint256 tokenId) internal virtual{
         /*POr defecto la dejamos vacia*/
     }
+
+
+    /*Transferir Tokens BLoque de codigo*/
+
+    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override{
+        safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override{
+        require(_isApprovedOrOwner(msg.sender, tokenId), "ERC721 ERROR, YOU DO NOT PERMISSIONS OR YOU NOT ARE THE OWNER");
+        _safeTransfer(from, to, tokenId, _data);
+    }
+
+    function _safeTransfer(address from, address to, uint256 tokenId, bytes memory _data) internal virtual{
+        _transfer(from, to, tokenId);
+        require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721 Error, transfer 721Received implemented");
+    }
+
+    function transferFrom(address from, address to, uint256 tokenId)public virtual override{
+        require(_isApprovedOrOwner(msg.sender, tokenId), "ERC721 ERROR, YOU DO NOT PERMISSIONS OR YOU NOT ARE THE OWNER" );
+        _transfer(from, to, tokenId);
+    }
+
+    function _transfer(address from, address to, uint256 tokenId) internal virtual {
+        require(ownerOf(tokenId) == from, "ERROR ERC721, TOKEN ID DOES NOT EXISTS");
+        require(to != address(0), "ERROR ERC721, TRANSFER TO ZERO ADDRESS");
+        _beforeTokenTransfer(from, to, tokenId);
+        _approved(address(0), tokenId);
+        _balances[from] -=1; //restamos balance
+        _balances[to] += 1;
+        _owners[tokenId] = to; //Identificamos dueño con el Id del token
+        emit Transfer(address(0), to, tokenId); //Se transfiere el token
+    }
+
+    /*Hasta aqui*/
 }
